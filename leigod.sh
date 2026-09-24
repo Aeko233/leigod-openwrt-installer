@@ -5,41 +5,6 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-if [ -e /etc/asus_release ]; then
-    echo "TONY 别肘! 我爱 BCM!"
-    echo ""
-    echo "[ERROR] 检测到 ASUS 路由器，无法运行 OpenWrt LeigodAcc 管理器，你不是 OpenWrt 系统!"
-
-    if [ ! -d /jffs/softcenter ]; then
-        echo "[INFO] 检测到官改 or Koolcenter 版本，即将脱离 OpenWrt 管理器运行官方脚本开始安装."
-        echo "[INFO] 以下内容均与 OpenWrt 管理器作者无关，本人并无华硕路由器 Debug!"
-        echo
-        sleep 5
-        cd /tmp || { echo "[ERROR] 无法切换到 /tmp 目录"; exit 1; }
-        sh -c "$(curl -fsSL http://119.3.40.126/router_plugin_new/plugin_install.sh)"
-    fi
-    exit 0
-fi
-
-if [ -d /userdisk/appdata ]; then
-    echo "R u OK?"
-    echo ""
-    echo "[ERROR] 检测到小米路由器，无法运行 OpenWrt LeigodAcc 管理器，你不是 OpenWrt 系统!"
-    name=$(uci get misc.hardware.displayName 2>/dev/null)
-    if [[ $? != "0" || -z ${name} ]]; then
-        name=$(uci get misc.hardware.model 2>/dev/null)
-    fi
-    if [[ -n ${name} ]]; then
-        echo "[INFO] 小米路由器: ${name}"
-        sleep 5
-        echo "[INFO] 检测到小米已经解锁了 SSH，即将脱离 OpenWrt 管理器运行官方脚本开始安装."
-        echo "[INFO] 以下内容均与 OpenWrt 管理器作者无关，本人并无小米路由器 Debug!"
-        echo
-        cd /tmp || { echo "[ERROR] 无法切换到 /tmp 目录"; exit 1; }
-        sh -c "$(curl -fsSL http://119.3.40.126/router_plugin_new/plugin_install.sh)"
-        exit 0
-    fi
-fi
 
 
 if which apk >/dev/null 2>&1; then
@@ -145,27 +110,9 @@ install_leigodacc() {
         esac
     fi
 
-    if [ -f /etc/catwrt_release ]; then
-        if [ "$PKG_MGR" = "opkg" ] && [ -f /etc/opkg/distfeeds.conf ]; then
-            if ! grep -q -E "catwrt|repo.miaoer.xyz" /etc/opkg/distfeeds.conf && ! ip a | grep -q -E "192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+|172\.1[6-9]\.[0-9]+\.[0-9]+|172\.2[0-9]+\.[0-9]+|172\.3[0-1]\.[0-9]+\.[0-9]+"; then
-                echo "[ERROR] 检测到 CatWrt，请先配置 CatWrt 软件源，请使用:"
-                echo "Cattools - Apply_repo"
-                echo
-                echo "在正确启用软件源后即可获取雷神加速器插件完整支持(可能)"
-                cattools
-                return
-            fi
-        fi
-    else
-        if [ "$PKG_MGR" = "opkg" ]; then
-            [ -f /etc/opkg/customfeeds.conf ] && echo "cat /etc/opkg/customfeeds.conf" && cat /etc/opkg/customfeeds.conf
-            [ -f /etc/opkg/distfeeds.conf ] && echo "cat /etc/opkg/distfeeds.conf" && cat /etc/opkg/distfeeds.conf
-        fi
-        if [ ! -f /usr/bin/cattools ]; then
-            echo "[AD] 你还没有安装 Cattools 以方便安装 LeigodAcc 中依赖部分缺少的组件"
-            echo "请查看 https://github.com/miaoermua/cattools 或使用"
-            echo "推荐 CatWrt 最新版 https://www.miaoer.net/network/catwrt"
-            echo ""
+    if [ -f /etc/catwrt_release ] && [ "$PKG_MGR" = "opkg" ] && [ -f /etc/opkg/distfeeds.conf ]; then
+        if ! grep -q -E "catwrt|repo.miaoer.xyz" /etc/opkg/distfeeds.conf; then
+            echo "[WARN] 检测到 CatWrt，请确保已正确配置固件软件源以安装依赖组件。"
         fi
     fi
 
@@ -211,66 +158,15 @@ install_leigodacc() {
     cd /tmp && sh -c "$(curl -fsSL http://119.3.40.126/router_plugin_new/plugin_install.sh)"
 
     if [ ! -d /usr/sbin/leigod ]; then
-        echo "[ERROR] 检测到 LeigodAcc 未安装，有可能是设备存储空间已满或者雷神服务器挂了!"
-        echo "请登录 OpenWrt 路由器后台: 系统-软件包 查看当前可用空间诊断."
+        echo "[ERROR] 检测到 LeigodAcc 未安装，有可能是设备存储空间已满或者雷神服务器异常!"
+        echo "请检查路由器可用空间或系统日志诊断。"
     else
         echo "[INFO] LeigodAcc 已成功安装"
     fi
-
-    for pkg in kmod-tun kmod-ipt-tproxy kmod-netem tc-full kmod-ipt-ipset conntrack curl libpcap iptables kmod-ipt-nat iptables-mod-tproxy ipset; do
-        if ! pkg_installed "$pkg"; then
-            echo "[INFO] 缺少组件包: $pkg"
-            echo "[INFO] 你可以通过管理器中的安装依赖性组件进行补充!"
-        fi
-    done
 }
 
 install_compatibility_dependencies() {
-    arch=$(pkg_arch)
-    if [ -z "$arch" ]; then
-        echo "[ERROR] 无法确定系统架构"
-        return
-    fi
-
-    case "$arch" in
-        x86_64)
-            packages="tc-full conntrack conntrackd libnetfilter-cttimeout1 libnetfilter-cthelper0"
-            urls="https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/x86_64/packages/libnetfilter-cttimeout1_1.0.0-2_x86_64.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/x86_64/packages/libnetfilter-cthelper0_1.0.0-2_x86_64.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/x86_64/base/tc-full_6.3.0-1_x86_64.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/x86_64/packages/conntrackd_1.4.8-1_x86_64.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/x86_64/packages/conntrack_1.4.8-1_x86_64.ipk"
-            ;;
-        mipsel_24kc)
-            packages="tc-full conntrack conntrackd libnetfilter-cttimeout1 libnetfilter-cthelper0"
-            urls="https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/mipsel_24kc/packages/conntrackd_1.4.8-1_mips_24kc.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/mipsel_24kc/packages/conntrack_1.4.8-1_mips_24kc.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/mipsel_24kc/packages/libnetfilter-cthelper0_1.0.0-2_mips_24kc.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/mipsel_24kc/packages/libnetfilter-cttimeout1_1.0.0-2_mips_24kc.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/mipsel_24kc/base/tc-full_6.3.0-1_mips_24kc.ipk"
-            ;;
-        aarch64_cortex-a53|aarch64_cortex-a53+crypto)
-            packages="tc-full conntrack conntrackd libnetfilter-cttimeout1 libnetfilter-cthelper0"
-            urls="https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_cortex-a53/base/tc-full_6.3.0-1_aarch64_cortex-a53.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_cortex-a53/packages/conntrack_1.4.8-1_aarch64_cortex-a53.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_cortex-a53/packages/conntrackd_1.4.8-1_aarch64_cortex-a53.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_cortex-a53/packages/libnetfilter-cttimeout1_1.0.0-2_aarch64_cortex-a53.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_cortex-a53/packages/libnetfilter-cthelper0_1.0.0-2_aarch64_cortex-a53.ipk"
-            ;;
-        aarch64_generic)
-            packages="tc-full conntrack conntrackd libnetfilter-cttimeout1 libnetfilter-cthelper0"
-            urls="https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_generic/packages/conntrack_1.4.8-1_aarch64_generic.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_generic/packages/conntrackd_1.4.8-1_aarch64_generic.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_generic/packages/libnetfilter-cthelper0_1.0.0-2_aarch64_generic.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_generic/packages/libnetfilter-cttimeout1_1.0.0-2_aarch64_generic.ipk
-            https://mirrors.pku.edu.cn/immortalwrt/releases/23.05.3/packages/aarch64_generic/base/tc-full_6.3.0-1_aarch64_generic.ipk"
-            ;;
-        *)
-            echo "[ERROR] 不支持的架构: $arch"
-            return
-            ;;
-    esac
-
+    local packages="tc-full conntrack conntrackd kmod-netem"
     local pkgs_to_install=""
     for pkg in $packages; do
         if ! pkg_installed "$pkg"; then
@@ -279,36 +175,11 @@ install_compatibility_dependencies() {
     done
 
     if [ -n "$pkgs_to_install" ]; then
-        echo "[INFO] 正在批量安装: $pkgs_to_install"
+        echo "[INFO] 正在批量安装网络优化组件:$pkgs_to_install"
         pkg_install $pkgs_to_install
     else
         echo "[INFO] 优化组件已全部安装，跳过"
     fi
-
-    tmp_dir=$(mktemp -d)
-    for pkg in $packages; do
-        if ! pkg_installed "$pkg"; then
-            if [ "$PKG_MGR" = "opkg" ]; then
-                echo "[INFO] $pkg 未在官方源中找到，尝试使用第三方源"
-                echo "[INFO] 正在使用天灵 immortalwrt pku 的软件源，并不是原生支持的软件包可能会存在你所在的第三方固件源除外的问题"
-                for url in $urls; do
-                    wget -P "$tmp_dir" "$url"
-                done
-                opkg install "$tmp_dir"/*.ipk
-            fi
-            break
-        fi
-    done
-    rm -rf "$tmp_dir"
-
-    for pkg in kmod-tun kmod-ipt-tproxy kmod-netem tc-full kmod-ipt-ipset conntrack curl libpcap iptables kmod-ipt-nat iptables-mod-tproxy ipset; do
-        if ! pkg_installed "$pkg"; then
-            echo "[ERROR] 缺少包: $pkg"
-            echo "Tip: 你可以到 immortalwrt 官网构建固件并勾选对应的组件替换掉当前系统,或者使用 CatWrt 支持 LeigodAcc 全部依赖."
-            echo "https://www.miaoer.net/posts/network/catwrt"
-            echo
-        fi
-    done
 }
 
 uninstall_leigodacc() {
@@ -553,49 +424,6 @@ install_lean_package_version() {
     fi
 }
 
-check_logs() {
-    if ! pkg_installed "tc-full"; then
-        return 0
-    fi
-
-    if grep -q "exec tc command failed" /tmp/acc/acc-gw.log-* && grep -q "No such file or directory" /tmp/acc/acc-gw.log-*; then
-        echo "[ERROR] 检测到插件中的 tc-full 组件出现了 'exec tc command failed' 错误，可能是软件源或者固件提供的 tc-full 组件问题"
-        echo "可能导致无法加速的问题，由于实装 tc-full 的用户过少，请自行测试加速问题或手动重装 tc-full 组件"
-        if [ "$PKG_MGR" = "apk" ]; then
-            echo "apk update && apk fix tc-full"
-        else
-            echo "opkg update && opkg remove tc-full && opkg install tc-full"
-        fi
-        echo
-        sleep 5
-    fi
-}
-
-check_acceleration() {
-    log_file="/tmp/acc/acc-gw.log-*.log"
-
-    if [ ! -f "$log_file" ]; then
-        return 1
-    fi
-
-    if ! grep -q "S5 UDP" "$log_file"; then
-        return 1
-    fi
-
-    last_s5_udp_time=$(grep -Eo '^[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' "$log_file" | tail -1)
-
-    if [ -z "$last_s5_udp_time" ]; then
-        return 1
-    fi
-
-    current_time=$(date +%s)
-    log_time=$(date -d "$last_s5_udp_time" +%s)
-    time_diff=$((current_time - log_time))
-
-    if [ "$time_diff" -gt 20 ]; then
-        echo "[INFO] 检测到 UDP 被成功代理，加速成功"
-    fi
-}
 
 check_openclash_mode() {
     if ! pgrep -f "openclash" > /dev/null 2>&1; then
@@ -664,8 +492,6 @@ check_bypass_gateway() {
 }
 
 check_openclash_mode
-check_acceleration
-check_logs
 check_bypass_gateway
 
 manage_proxy_bypass() {
