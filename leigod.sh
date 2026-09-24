@@ -113,21 +113,21 @@ fi
 
 leigod_menu() {
     echo
-    echo "============================="
-    echo "OpenWrt LeigodAcc Manager"
-    echo
-    echo "1. 安装"
-    echo "2. 卸载"
-    echo "3. 重装/更新"
-    echo "4. 禁用/启用 雷神服务"
-    echo "5. 切换运行模式   (TUN/Tproxy)"
-    echo "6. 安装兼容性依赖 (主机优化)"
-    echo "7. 禁用/启用 IPv6 (手机优化)"
-    echo "8. 安装 Lean 软件包版本 (IPK/APK)"
-    echo "9. 反馈/帮助"
+    echo "=========================================="
+    echo "     雷神加速器 OpenWrt 管理器"
+    echo "=========================================="
+    echo "1. 官方脚本安装 (仅后台服务, 手机App绑定)"
+    echo "2. 卸载加速器插件及配置"
+    echo "3. 重装 / 更新插件"
+    echo "4. 启用 / 停止 加速服务"
+    echo "5. 切换运行模式 (TUN / Tproxy)"
+    echo "6. 安装网络优化组件 (提升Ping值与NAT类型)"
+    echo "7. 开关 IPv6 (部分手游加速优化)"
+    echo "8. 安装 LuCI 插件版 (含网页管理界面)"
+    echo "9. 查看帮助说明"
     echo "0. 退出"
-    echo "============================="
-    echo -n "选择数字功能项并回车执行: "
+    echo "=========================================="
+    echo -n "请输入对应数字并回车: "
 }
 
 install_leigodacc() {
@@ -673,20 +673,17 @@ check_bypass_gateway
 
 help() {
     echo ""
-    echo "BLOG: https://www.miaoer.net/posts/blog/openwrt-leigodacc-manager"
-    echo "[Tip] LeigodAcc 特指雷神加速器，leigod-acc 特指 Lean 版雷神插件"
-    echo ""
-    echo "HELP："
-    echo "1. 安装：安装 LeigodAcc"
-    echo "2. 卸载：卸载 LeigodAcc"
-    echo "3. 重装：重装 LeigodAcc"
-    echo "4. 禁用/启用：禁用或启用 LeigodAcc 服务"
-    echo "5. 切换运行模式：在 TUN 和 Tproxy 模式之间切换"
-    echo "6. 安装兼容性依赖：尝试使用天灵 immoralwrt pku 源安装常见缺失依赖"
-    echo "7. 禁用 IPv6: 可以使手机部分手机游戏也能正常加速，会禁用掉 IPv6 网络"
-    echo "8. 切换为 Lean 软件包版：安装 leigod-acc 插件 (支持 opkg/apk)"
-    echo "9. 帮助：显示帮助信息"
-    echo "0. 退出：退出管理器"
+    echo "【功能说明】"
+    echo "1. 官方脚本安装：直接拉取雷神官方最新加速引擎，适合只需要用手机 App 绑定的用户（路由器后台无网页）。"
+    echo "2. 卸载：停止加速进程并清理相关防火墙规则与配置文件。"
+    echo "3. 重装/更新：重新下载并部署加速器。"
+    echo "4. 启用/停止：控制加速核心是否开机自启和后台运行。"
+    echo "5. 切换运行模式：在 TUN 虚拟网卡模式与 Tproxy 透明代理模式之间切换（如使用代理插件请优先选 TUN 模式）。"
+    echo "6. 安装网络优化组件：补充 tc-full、conntrack 等包，优化游戏时延与 NAT 类型识别。"
+    echo "7. 开关 IPv6：部分游戏对双栈网络兼容性较差，若加速异常可尝试临时关闭 IPv6。"
+    echo "8. 安装 LuCI 插件版：安装包含路由器网页管理页面的完整插件（支持新版 apk 与传统 opkg）。"
+    echo "9. 查看帮助：显示本说明。"
+    echo "0. 退出：退出管理器。"
     echo ""
     sleep 3
 }
