@@ -122,7 +122,7 @@ leigod_menu() {
     echo "4. 启用 / 停止 加速服务"
     echo "5. 切换运行模式 (TUN / Tproxy)"
     echo "6. 安装网络优化组件 (提升Ping值与NAT类型)"
-    echo "7. 开关 IPv6 (部分手游加速优化)"
+    echo "7. 开关 IPv6 (防游戏流量绕过加速器, PC/主机/手游通用)"
     echo "8. 安装 LuCI 插件版 (含网页管理界面)"
     echo "9. 查看帮助说明"
     echo "0. 退出"
@@ -437,7 +437,7 @@ disabled_ipv6() {
         uci set dhcp.lan.dhcpv6='disabled'
         uci add_list dhcp.lan.ra_flags='none'
         echo "[INFO] IPv6 已禁用"
-        echo "[INFO] iOS/Android 设备请忘记无线 Wi-Fi 网络再连接，插件内就会自动识别"
+        echo "[INFO] 提示：PC/主机/手机游戏若优先走 IPv6 会导致绕过加速器，禁用后终端设备重新连接网络即可生效"
     fi
 
     uci commit dhcp
@@ -680,7 +680,7 @@ help() {
     echo "4. 启用/停止：控制加速核心是否开机自启和后台运行。"
     echo "5. 切换运行模式：在 TUN 虚拟网卡模式与 Tproxy 透明代理模式之间切换（如使用代理插件请优先选 TUN 模式）。"
     echo "6. 安装网络优化组件：补充 tc-full、conntrack 等包，优化游戏时延与 NAT 类型识别。"
-    echo "7. 开关 IPv6：部分游戏对双栈网络兼容性较差，若加速异常可尝试临时关闭 IPv6。"
+    echo "7. 开关 IPv6：部分 PC/主机/手游在双栈网络下会优先走 IPv6 导致绕过加速代理，若加速异常或无流量可尝试临时关闭局域网 IPv6。"
     echo "8. 安装 LuCI 插件版：安装包含路由器网页管理页面的完整插件（支持新版 apk 与传统 opkg）。"
     echo "9. 查看帮助：显示本说明。"
     echo "0. 退出：退出管理器。"
