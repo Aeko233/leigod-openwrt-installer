@@ -477,16 +477,13 @@ install_lean_package_version() {
         echo "[INFO] 检测到 apk 包管理器，准备安装 APK 格式插件..."
         case "$arch" in
             "aarch64_cortex-a53")
-                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.3.0.30-r1.aarch64_cortex-a53.apk"
+                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.2.2.52-r1.aarch64_cortex-a53.apk"
                 ;;
             "aarch64"|"aarch64_generic")
-                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.3.0.30-r1.aarch64_generic.apk"
-                ;;
-            "mipsel_24kc"|"mips"|"mipsel")
-                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.3.0.30-r1.mipsel_24kc.apk"
+                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.2.2.52-r1.aarch64_generic.apk"
                 ;;
             "x86_64")
-                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.3.0.30-r1.x86_64.apk"
+                apk_url="$gh_proxy/$raw_base/packages/apk/leigod-acc-1.2.2.52-r1.x86_64.apk"
                 ;;
             *)
                 echo "[ERROR] 不支持的架构: $arch"
