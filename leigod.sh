@@ -124,7 +124,8 @@ leigod_menu() {
     echo "6. 安装网络优化组件 (提升Ping值与NAT类型)"
     echo "7. 开关 IPv6 (防游戏流量绕过加速器, PC/主机/手游通用)"
     echo "8. 安装 LuCI 插件版 (含网页管理界面)"
-    echo "9. 查看帮助说明"
+    echo "9. 代理共存设置 (配置游戏设备绕过科学代理)"
+    echo "10. 查看帮助说明"
     echo "0. 退出"
     echo "=========================================="
     echo -n "请输入对应数字并回车: "
@@ -671,6 +672,74 @@ check_acceleration
 check_logs
 check_bypass_gateway
 
+manage_proxy_bypass() {
+    echo
+    echo "--- 代理共存设置 (游戏设备绕过科学代理) ---"
+    echo "说明：当系统运行 OpenClash/PassWall 等代理插件时，可将游戏设备 IP 加入绕过列表，"
+    echo "防火墙将直接放行该设备流量，避免被外部代理拦截或发生规则冲突。"
+    echo
+
+    ipset create leigod_bypass hash:ip 2>/dev/null
+    
+    current_ips=$(ipset list leigod_bypass 2>/dev/null | sed -n '/Members:/,$p' | tail -n +2)
+    echo "当前已生效的绕过 IP 列表:"
+    if [ -z "$current_ips" ]; then
+        echo "  (暂无)"
+    else
+        for ip in $current_ips; do
+            echo "  - $ip"
+        done
+    fi
+    echo
+    echo "1. 添加设备 IP 绕过代理"
+    echo "2. 移除设备 IP"
+    echo "3. 清空所有绕过设备"
+    echo "0. 返回上级菜单"
+    echo -n "请选择: "
+    read -r b_choice
+
+    case $b_choice in
+        1)
+            echo -n "请输入游戏设备局域网 IP (例如 192.168.1.150): "
+            read -r dev_ip
+            if [ -n "$dev_ip" ]; then
+                ipset create leigod_bypass hash:ip 2>/dev/null
+                ipset add leigod_bypass "$dev_ip" 2>/dev/null
+                iptables -t mangle -C PREROUTING -m set --match-set leigod_bypass src -j RETURN 2>/dev/null || \
+                    iptables -t mangle -I PREROUTING 1 -m set --match-set leigod_bypass src -j RETURN 2>/dev/null
+                iptables -t nat -C PREROUTING -m set --match-set leigod_bypass src -j RETURN 2>/dev/null || \
+                    iptables -t nat -I PREROUTING 1 -m set --match-set leigod_bypass src -j RETURN 2>/dev/null
+                if [ -f /etc/config/openclash ]; then
+                    uci add_list openclash.config.bypass_source_ip="$dev_ip" 2>/dev/null
+                    uci commit openclash 2>/dev/null
+                fi
+                echo "[INFO] 已成功添加 $dev_ip 至直连绕过名单，游戏流量将不经过外部代理。"
+            fi
+            ;;
+        2)
+            echo -n "请输入要移除的设备 IP: "
+            read -r dev_ip
+            if [ -n "$dev_ip" ]; then
+                ipset del leigod_bypass "$dev_ip" 2>/dev/null
+                if [ -f /etc/config/openclash ]; then
+                    uci del_list openclash.config.bypass_source_ip="$dev_ip" 2>/dev/null
+                    uci commit openclash 2>/dev/null
+                fi
+                echo "[INFO] 已将 $dev_ip 从绕过名单中移除。"
+            fi
+            ;;
+        3)
+            iptables -t mangle -D PREROUTING -m set --match-set leigod_bypass src -j RETURN 2>/dev/null
+            iptables -t nat -D PREROUTING -m set --match-set leigod_bypass src -j RETURN 2>/dev/null
+            ipset flush leigod_bypass 2>/dev/null
+            echo "[INFO] 已清空全部绕过名单。"
+            ;;
+        *)
+            return
+            ;;
+    esac
+}
+
 help() {
     echo ""
     echo "【功能说明】"
@@ -682,7 +751,8 @@ help() {
     echo "6. 安装网络优化组件：补充 tc-full、conntrack 等包，优化游戏时延与 NAT 类型识别。"
     echo "7. 开关 IPv6：部分 PC/主机/手游在双栈网络下会优先走 IPv6 导致绕过加速代理，若加速异常或无流量可尝试临时关闭局域网 IPv6。"
     echo "8. 安装 LuCI 插件版：安装包含路由器网页管理页面的完整插件（支持新版 apk 与传统 opkg）。"
-    echo "9. 查看帮助：显示本说明。"
+    echo "9. 代理共存设置：配置游戏主机/PC 的 IP 直连绕过 OpenClash/PassWall 等代理，防止游戏流量被外部代理劫持冲突。"
+    echo "10. 查看帮助：显示本说明。"
     echo "0. 退出：退出管理器。"
     echo ""
     sleep 3
@@ -717,6 +787,9 @@ while true; do
             install_lean_package_version
             ;;
         9)
+            manage_proxy_bypass
+            ;;
+        10)
             help
             ;;
         0)
