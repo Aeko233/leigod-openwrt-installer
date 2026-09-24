@@ -94,12 +94,10 @@ pkg_arch() {
 
 if ! grep -qi -E "OpenWrt|LEDE|QWRT|ImmortalWrt|iStoreOS" /etc/openwrt_release; then
     echo "Your system is not supported!"
-    echo "[INFO]你的系统可能无法运行 OpenWrt Leigodacc 插件!"
+    echo "[INFO] 你的系统可能无法运行 OpenWrt Leigodacc 插件!"
     echo "当前系统环境并非常见或标准的 OpenWrt，可能是论坛版本修改发行版文件导致无法识别"
     echo "可能导致无法正常支持全部依赖，部分组件可能无法正常启用导致加速问题"
-    echo "你可以无视风险继续安装，5s 后将进入管理器菜单，详情参考管理器发布于博客信息"
     echo
-    sleep 5
 fi
 
 if [ -x /usr/sbin/fw4 ] || [ -f /etc/config/firewall ] && grep -q "fw4" /etc/init.d/firewall 2>/dev/null; then
@@ -108,7 +106,6 @@ if [ -x /usr/sbin/fw4 ] || [ -f /etc/config/firewall ] && grep -q "fw4" /etc/ini
     echo "[WARN] 雷神加速器官方服务核心 (acc-gw) 原生依赖 iptables / tproxy。"
     echo "[WARN] 请确保系统已安装 iptables-nft、kmod-nft-tproxy、kmod-nft-nat 等兼容层组件。"
     echo ""
-    sleep 3
 fi
 
 leigod_menu() {
@@ -134,7 +131,7 @@ leigod_menu() {
 install_leigodacc() {
     if [ -d /usr/sbin/leigod ]; then
         echo -n "[INFO] 检测到已经安装 LeigodAcc ([1]继续安装 / [2]取消): "
-        read choice
+        read -r choice
         case $choice in
             1)
                 ;;
@@ -179,27 +176,18 @@ install_leigodacc() {
 
     pkg_update
 
-    for pkg in libpcap iptables kmod-ipt-nat iptables-mod-tproxy kmod-ipt-ipset ipset; do
+    local need_install=""
+    for pkg in libpcap iptables kmod-ipt-nat iptables-mod-tproxy kmod-ipt-ipset ipset kmod-tun kmod-ipt-tproxy kmod-netem tc-full conntrack luci-app-upnp; do
         if ! pkg_installed "$pkg"; then
-            echo "[INFO] 正在安装必备组件 $pkg"
-            pkg_install "$pkg"
-        else
-            echo "[INFO] $pkg 必备组件已安装，跳过"
+            need_install="$need_install $pkg"
         fi
     done
 
-    for pkg in kmod-tun kmod-ipt-tproxy kmod-netem tc-full conntrack; do
-        if ! pkg_installed "$pkg"; then
-            echo "[INFO] 尝试安装 $pkg"
-            pkg_install "$pkg"
-        else
-            echo "[INFO] $pkg 已安装，跳过"
-        fi
-    done
-
-    if ! pkg_installed "luci-app-upnp"; then
-        echo "[INFO] luci-app-upnp 未安装，正在安装..."
-        pkg_install luci-app-upnp
+    if [ -n "$need_install" ]; then
+        echo "[INFO] 正在批量安装缺失组件:$need_install"
+        pkg_install $need_install
+    else
+        echo "[INFO] 所有必备组件均已安装，跳过"
     fi
 
     if [ -f /etc/config/upnpd ]; then
@@ -283,14 +271,19 @@ install_compatibility_dependencies() {
             ;;
     esac
 
+    local pkgs_to_install=""
     for pkg in $packages; do
         if ! pkg_installed "$pkg"; then
-            echo "[INFO] 安装 $pkg"
-            pkg_install "$pkg"
-        else
-            echo "[INFO] $pkg 已安装，跳过"
+            pkgs_to_install="$pkgs_to_install $pkg"
         fi
     done
+
+    if [ -n "$pkgs_to_install" ]; then
+        echo "[INFO] 正在批量安装: $pkgs_to_install"
+        pkg_install $pkgs_to_install
+    else
+        echo "[INFO] 优化组件已全部安装，跳过"
+    fi
 
     tmp_dir=$(mktemp -d)
     for pkg in $packages; do
@@ -459,14 +452,17 @@ install_lean_package_version() {
         return
     fi
 
-    required_packages="libpcap iptables kmod-ipt-nat iptables-mod-tproxy kmod-ipt-tproxy kmod-ipt-ipset ipset kmod-tun curl miniupnpd tc-full kmod-netem conntrack conntrackd luci-compat"
-    echo "[INFO] 正在安装必要依赖包..."
-    for package in $required_packages; do
+    local missing_deps=""
+    for package in libpcap iptables kmod-ipt-nat iptables-mod-tproxy kmod-ipt-tproxy kmod-ipt-ipset ipset kmod-tun curl miniupnpd tc-full kmod-netem conntrack conntrackd luci-compat luci-app-upnp; do
         if ! pkg_installed "$package"; then
-            echo "[INFO] 尝试安装依赖包: $package"
-            pkg_install "$package"
+            missing_deps="$missing_deps $package"
         fi
     done
+
+    if [ -n "$missing_deps" ]; then
+        echo "[INFO] 批量安装缺失依赖包:$missing_deps"
+        pkg_install $missing_deps
+    fi
 
     arch=$(pkg_arch)
 
@@ -755,12 +751,11 @@ help() {
     echo "10. 查看帮助：显示本说明。"
     echo "0. 退出：退出管理器。"
     echo ""
-    sleep 3
 }
 
 while true; do
     leigod_menu
-    read choice
+    read -r choice
     case $choice in
         1)
             install_leigodacc
