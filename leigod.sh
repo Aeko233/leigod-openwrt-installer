@@ -470,7 +470,7 @@ install_lean_package_version() {
     arch=$(pkg_arch)
 
     mkdir -p /tmp/upload
-    raw_base="https://raw.githubusercontent.com/Aeko233/openwrt-leigodacc-manager/main"
+    raw_base="https://raw.githubusercontent.com/Aeko233/leigod-openwrt-installer/main"
     gh_proxy="https://gh-proxy.com"
 
     if [ "$PKG_MGR" = "apk" ]; then

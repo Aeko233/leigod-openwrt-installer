@@ -1,4 +1,4 @@
-# openwrt-leigodacc-manager
+# leigod-openwrt-installer
 
 基于 Shell 脚本的雷神加速器插件管理器，适用于 OpenWrt / ImmortalWrt 系统。
 
@@ -11,7 +11,7 @@
 通过 SSH 登录路由器终端，执行以下命令运行管理器：
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/Aeko233/openwrt-leigodacc-manager/main/leigod.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Aeko233/leigod-openwrt-installer/main/leigod.sh)"
 ```
 
 ---
